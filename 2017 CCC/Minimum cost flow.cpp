@@ -46,6 +46,13 @@ public:
         parent[ry] = rx; // Link ry to rx
         if (rank[rx] == rank[ry]) rank[rx]++; // Increment rank if necessary
     }
+
+    
+    void reset(int size) {
+        parent.resize(size + 1);
+        rank.resize(size + 1, 1);
+        for (int i = 1; i <= size; i++) parent[i] = i;
+    }
 };
 
 int main() {
@@ -76,35 +83,27 @@ int main() {
             if (!e.original) days++; // Increment days if the edge is not original
             maxEdge = e; // Update the max edge
             connected++; // Increase the count of connected edges
-            // Check if subtracting d would lower the cost
-            int new_cost = std::min(e.cost, e.cost - d);
-            if (new_cost < e.cost) {
-                // Subtracting d would lower the cost, so update the cost
-                Edge updated_edge(e.x, e.y, new_cost, e.original);
-                edges[i] = updated_edge;
-            }
         }
     }
 
     // Calculate the weight of the heaviest edge (wl)
     int wl = maxEdge.cost;
 
-    // Run Kruskal's algorithm with a slight modification
-    int daysReduced = 0;
-    UnionFind checkUf(n); // New Union-Find for validation
+    
+    uf.reset(n);
     for (const Edge& e : edges) {
         // Ensure we only process edges that could replace the max edge
         if (uf.find(e.x) != uf.find(e.y)) {
             if (e.cost < wl || (e.cost == wl && e.original)) {
-                checkUf.unite(e.x, e.y); // Union if this edge is better
-            } else if (e.original) {
-                daysReduced = 1;
+                uf.unite(e.x, e.y); // Union if this edge is better
+            } else if (e.original && e.cost <= d) {
+                days -= 1;
                 break;
             }
         }
     }
     
     // Output the total days needed
-    cout << days - daysReduced; // Output the total days needed
+    cout << days; // Output the total days needed
     return 0;
 }
