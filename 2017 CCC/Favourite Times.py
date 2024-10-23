@@ -29,9 +29,6 @@ if d <= 720:
         if is_time_arithmetic_sequence(hours, minutes):
             favTime +=1
             
-            
-        
-
 elif d > 720:
     temp = d % 720
     hours = 12
