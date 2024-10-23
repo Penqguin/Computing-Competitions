@@ -89,7 +89,7 @@ int main() {
     // Calculate the weight of the heaviest edge (wl)
     int wl = maxEdge.cost;
 
-    
+    // Reset the Union-Find structure and process edges again
     uf.reset(n);
     for (const Edge& e : edges) {
         // Ensure we only process edges that could replace the max edge
