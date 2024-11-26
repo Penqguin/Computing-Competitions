@@ -10,7 +10,7 @@ int sparseTable[LOG_MAX][LOG_MAX][MAX_N][MAX_N];
 int n;
 
 // Preprocess the array into a 2D sparse table
-void init(std::vector<std::vector<int>> arr) { // Match header file signature
+void init(std::vector<std::vector<int>> arr) {
     n = arr.size();
     int logN = std::log2(n) + 1;
 
@@ -75,6 +75,7 @@ int main() {
         int a, b, c, d;
         std::cin >> a >> b >> c >> d;
 
+        // Convert 1-based to 0-based indexing
         a--; b--; c--; d--;
 
         int result = query(a, b, c, d);
