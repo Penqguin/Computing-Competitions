@@ -3,88 +3,85 @@
 #include <cmath>
 #include <algorithm>
 
-using namespace std;
+const int MAX_N = 1000;
+const int LOG_MAX = 11;
 
-const int MAXN = 1000; // Maximum size of the 2D array
-const int LOG = 10;    // log2(1000) ≈ 10
+int sparseTable[LOG_MAX][LOG_MAX][MAX_N][MAX_N];
+int n;
 
-int st[MAXN][MAXN][LOG][LOG]; // Sparse Table
+// Preprocess the array into a 2D sparse table
+void init(std::vector<std::vector<int>> arr) { // Match header file signature
+    n = arr.size();
+    int logN = std::log2(n) + 1;
 
-// Function to build the Sparse Table
-void init(std::vector<std::vector<int>> arr); 
-
-// Function to query the minimum in the submatrix from (a, b) to (c, d)
-int query(int a, int b, int c, int d);
-
-// Example usage
-int main() {
-  int N;
-  cin >> N;
-  vector<vector<int>> arr(N, vector<int>(N));
-
-// Input the 2D array
-  for (int i = 0; i < N; i++) {
-    for (int j = 0; j < N; j++) {
-      cin >> arr[i][j];
-    }
-  }
-
-  // Initialize the Sparse Table
-  init(arr);
-
-  // Example query
-  int a, b, c, d;
-  cin >> a >> b >> c >> d;
-  cout << query(a, b, c, d) << endl;
-
-  return 0;
-}
-
-void init(std::vector<std::vector<int>> arr) {
-  int N = arr.size();
-
-  // Step 1: Initialize the Sparse Table for submatrices of size 1x1
-  for (int i = 0; i < N; i++) {
-    for (int j = 0; j < N; j++) {
-      st[i][j][0][0] = arr[i][j];
-    }
-  }
-
-  // Step 2: Build the Sparse Table for larger submatrices
-  for (int x = 0; (1 << x) <= N; ++x) {         // Row dimension
-    for (int y = 0; (1 << y) <= N; ++y) {     // Column dimension
-      if (x == 0 && y == 0) continue;       // Already initialized
-        
-      for (int i = 0; i + (1 << x) - 1 < N; i++) {
-        for (int j = 0; j + (1 << y) - 1 < N; j++) {
-          if (x == 0) {
-            // Only expanding in the column direction
-            st[i][j][x][y] = min(st[i][j][x][y-1], st[i][j + (1 << (y-1))][x][y-1]);
-          } else if (y == 0) {
-            // Only expanding in the row direction
-            st[i][j][x][y] = min(st[i][j][x-1][y], st[i + (1 << (x-1))][j][x-1][y]);
-          } else {
-            // Expanding in both row and column directions
-            st[i][j][x][y] = min({st[i][j][x-1][y-1], 
-                                  st[i + (1 << (x-1))][j][x-1][y-1],
-                                  st[i][j + (1 << (y-1))][x-1][y-1],
-                                  st[i + (1 << (x-1))][j + (1 << (y-1))][x-1][y-1]});
-          }
+    // Base case: subgrids of size 1x1
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            sparseTable[0][0][i][j] = arr[i][j];
         }
-      }
     }
-  }
+
+    // Fill sparse table for subgrids of size 1x(2^k)
+    for (int k = 1; k < logN; ++k) {
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j + (1 << k) <= n; ++j) {
+                sparseTable[0][k][i][j] = std::min(sparseTable[0][k - 1][i][j],
+                                                   sparseTable[0][k - 1][i][j + (1 << (k - 1))]);
+            }
+        }
+    }
+
+    // Fill sparse table for subgrids of size (2^k)x(2^l)
+    for (int k1 = 1; k1 < logN; ++k1) {
+        for (int k2 = 0; k2 < logN; ++k2) {
+            for (int i = 0; i + (1 << k1) <= n; ++i) {
+                for (int j = 0; j + (1 << k2) <= n; ++j) {
+                    sparseTable[k1][k2][i][j] = std::min(sparseTable[k1 - 1][k2][i][j],
+                                                         sparseTable[k1 - 1][k2][i + (1 << (k1 - 1))][j]);
+                }
+            }
+        }
+    }
 }
 
+// Query the sparse table for the minimum value in the subgrid
 int query(int a, int b, int c, int d) {
-  int kx = log2(c - a + 1);
-  int ky = log2(d - b + 1);
+    int k1 = std::log2(c - a + 1);
+    int k2 = std::log2(d - b + 1);
 
-  // Use precomputed values from the Sparse Table
-  int min1 = st[a][b][kx][ky];
-  int min2 = st[c - (1 << kx) + 1][b][kx][ky];
-  int min3 = st[a][d - (1 << ky) + 1][kx][ky];
-  int min4 = st[c - (1 << kx) + 1][d - (1 << ky) + 1][kx][ky];
+    int min1 = sparseTable[k1][k2][a][b];
+    int min2 = sparseTable[k1][k2][c - (1 << k1) + 1][b];
+    int min3 = sparseTable[k1][k2][a][d - (1 << k2) + 1];
+    int min4 = sparseTable[k1][k2][c - (1 << k1) + 1][d - (1 << k2) + 1];
 
-  return min({min1, min2, min3, min4});
+    return std::min({min1, min2, min3, min4});
+}
+
+int main() {
+    int N, Q;
+    std::cin >> N >> Q;
+
+    std::vector<std::vector<int>> input(N, std::vector<int>(N));
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            std::cin >> input[i][j];
+        }
+    }
+
+    init(input);
+
+    int xorResult = 0;
+    for (int i = 0; i < Q; ++i) {
+        int a, b, c, d;
+        std::cin >> a >> b >> c >> d;
+
+        a--; b--; c--; d--;
+
+        int result = query(a, b, c, d);
+        xorResult ^= result;
+    }
+
+    std::cout << xorResult << std::endl;
+
+    return 0;
 }
